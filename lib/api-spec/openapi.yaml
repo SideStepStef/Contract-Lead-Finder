@@ -177,6 +177,54 @@ paths:
                 items:
                   $ref: "#/components/schemas/Category"
 
+  /opportunities/search:
+    get:
+      operationId: searchOpportunities
+      tags: [opportunities]
+      summary: Search SAM.gov contract opportunities
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: List of opportunities from SAM.gov
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunitiesResult"
+        "503":
+          description: SAM.gov API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyMissing"
+
+  /opportunities/import:
+    post:
+      operationId: importOpportunity
+      tags: [opportunities]
+      summary: Import a SAM.gov opportunity as a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpportunityImportInput"
+      responses:
+        "201":
+          description: Imported as a lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
 components:
   schemas:
     HealthStatus:
@@ -308,3 +356,83 @@ components:
           type: string
         count:
           type: integer
+
+    Opportunity:
+      type: object
+      required:
+        - noticeId
+        - title
+        - postedDate
+        - active
+        - uiLink
+      properties:
+        noticeId:
+          type: string
+        title:
+          type: string
+        solicitationNumber:
+          type: ["string", "null"]
+        agency:
+          type: ["string", "null"]
+        postedDate:
+          type: ["string", "null"]
+        responseDeadLine:
+          type: ["string", "null"]
+        naicsCode:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+        active:
+          type: string
+        awardAmount:
+          type: ["number", "null"]
+        uiLink:
+          type: string
+
+    OpportunitiesResult:
+      type: object
+      required:
+        - opportunities
+        - totalRecords
+      properties:
+        opportunities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Opportunity"
+        totalRecords:
+          type: integer
+
+    ApiKeyMissing:
+      type: object
+      required:
+        - error
+        - setupUrl
+      properties:
+        error:
+          type: string
+        setupUrl:
+          type: string
+
+    OpportunityImportInput:
+      type: object
+      required:
+        - noticeId
+        - title
+        - uiLink
+      properties:
+        noticeId:
+          type: string
+        title:
+          type: string
+        agency:
+          type: ["string", "null"]
+        responseDeadLine:
+          type: ["string", "null"]
+        naicsCode:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+        awardAmount:
+          type: ["number", "null"]
+        uiLink:
+          type: string
