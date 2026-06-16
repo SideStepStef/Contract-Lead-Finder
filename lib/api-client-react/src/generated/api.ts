@@ -20,13 +20,17 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiKeyMissing,
   Category,
   HealthStatus,
   Lead,
   LeadInput,
   LeadUpdate,
   LeadsStats,
-  ListLeadsParams
+  ListLeadsParams,
+  OpportunitiesResult,
+  OpportunityImportInput,
+  SearchOpportunitiesParams
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -723,4 +727,159 @@ export function useListCategories<TData = Awaited<ReturnType<typeof listCategori
 
 
 
+
+export const getSearchOpportunitiesUrl = (params?: SearchOpportunitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/opportunities/search?${stringifiedParams}` : `/api/opportunities/search`
+}
+
+/**
+ * @summary Search SAM.gov contract opportunities
+ */
+export const searchOpportunities = async (params?: SearchOpportunitiesParams, options?: RequestInit): Promise<OpportunitiesResult> => {
+
+  return customFetch<OpportunitiesResult>(getSearchOpportunitiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchOpportunitiesQueryKey = (params?: SearchOpportunitiesParams,) => {
+    return [
+    `/api/opportunities/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchOpportunitiesQueryOptions = <TData = Awaited<ReturnType<typeof searchOpportunities>>, TError = ErrorType<ApiKeyMissing>>(params?: SearchOpportunitiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchOpportunities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchOpportunitiesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchOpportunities>>> = ({ signal }) => searchOpportunities(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchOpportunities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchOpportunitiesQueryResult = NonNullable<Awaited<ReturnType<typeof searchOpportunities>>>
+export type SearchOpportunitiesQueryError = ErrorType<ApiKeyMissing>
+
+
+/**
+ * @summary Search SAM.gov contract opportunities
+ */
+
+export function useSearchOpportunities<TData = Awaited<ReturnType<typeof searchOpportunities>>, TError = ErrorType<ApiKeyMissing>>(
+ params?: SearchOpportunitiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchOpportunities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchOpportunitiesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getImportOpportunityUrl = () => {
+
+
+
+
+  return `/api/opportunities/import`
+}
+
+/**
+ * @summary Import a SAM.gov opportunity as a lead
+ */
+export const importOpportunity = async (opportunityImportInput: OpportunityImportInput, options?: RequestInit): Promise<Lead> => {
+
+  return customFetch<Lead>(getImportOpportunityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      opportunityImportInput,)
+  }
+);}
+
+
+
+
+export const getImportOpportunityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importOpportunity>>, TError,{data: BodyType<OpportunityImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importOpportunity>>, TError,{data: BodyType<OpportunityImportInput>}, TContext> => {
+
+const mutationKey = ['importOpportunity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importOpportunity>>, {data: BodyType<OpportunityImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importOpportunity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportOpportunityMutationResult = NonNullable<Awaited<ReturnType<typeof importOpportunity>>>
+    export type ImportOpportunityMutationBody = BodyType<OpportunityImportInput>
+    export type ImportOpportunityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Import a SAM.gov opportunity as a lead
+ */
+export const useImportOpportunity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importOpportunity>>, TError,{data: BodyType<OpportunityImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importOpportunity>>,
+        TError,
+        {data: BodyType<OpportunityImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportOpportunityMutationOptions(options));
+    }
 

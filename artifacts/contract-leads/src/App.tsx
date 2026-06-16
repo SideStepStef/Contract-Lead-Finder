@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import Leads from "@/pages/leads";
 import LeadDetail from "@/pages/lead-detail";
 import NewLead from "@/pages/new-lead";
+import Import from "@/pages/import";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/leads/new" component={NewLead} />
         <Route path="/leads/:id" component={LeadDetail} />
         <Route path="/leads" component={Leads} />
+        <Route path="/import" component={Import} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

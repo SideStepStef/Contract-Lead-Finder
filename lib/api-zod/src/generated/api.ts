@@ -175,3 +175,46 @@ export const ListCategoriesResponseItem = zod.object({
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
+/**
+ * @summary Search SAM.gov contract opportunities
+ */
+export const searchOpportunitiesQueryLimitDefault = 10;
+
+export const SearchOpportunitiesQueryParams = zod.object({
+  "keyword": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().default(searchOpportunitiesQueryLimitDefault)
+})
+
+export const SearchOpportunitiesResponse = zod.object({
+  "opportunities": zod.array(zod.object({
+  "noticeId": zod.string(),
+  "title": zod.string(),
+  "solicitationNumber": zod.string().nullish(),
+  "agency": zod.string().nullish(),
+  "postedDate": zod.string().nullable(),
+  "responseDeadLine": zod.string().nullish(),
+  "naicsCode": zod.string().nullish(),
+  "type": zod.string().nullish(),
+  "active": zod.string(),
+  "awardAmount": zod.number().nullish(),
+  "uiLink": zod.string()
+})),
+  "totalRecords": zod.number()
+})
+
+
+/**
+ * @summary Import a SAM.gov opportunity as a lead
+ */
+export const ImportOpportunityBody = zod.object({
+  "noticeId": zod.string(),
+  "title": zod.string(),
+  "agency": zod.string().nullish(),
+  "responseDeadLine": zod.string().nullish(),
+  "naicsCode": zod.string().nullish(),
+  "type": zod.string().nullish(),
+  "awardAmount": zod.number().nullish(),
+  "uiLink": zod.string()
+})
+
+

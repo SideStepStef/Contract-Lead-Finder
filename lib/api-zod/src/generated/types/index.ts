@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './apiKeyMissing';
 export * from './category';
 export * from './healthStatus';
 export * from './lead';
@@ -17,3 +18,7 @@ export * from './leadStatus';
 export * from './leadUpdate';
 export * from './leadUpdateStatus';
 export * from './listLeadsParams';
+export * from './opportunitiesResult';
+export * from './opportunity';
+export * from './opportunityImportInput';
+export * from './searchOpportunitiesParams';

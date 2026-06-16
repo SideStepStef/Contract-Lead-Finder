@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Briefcase, Plus, Settings, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Briefcase, Plus, Settings, BarChart2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
@@ -9,6 +9,7 @@ export function Sidebar() {
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "All Leads", href: "/leads", icon: Briefcase },
     { name: "New Lead", href: "/leads/new", icon: Plus },
+    { name: "Import from SAM.gov", href: "/import", icon: Download },
   ];
 
   return (

@@ -109,9 +109,61 @@ export interface Category {
   count: number;
 }
 
+export interface Opportunity {
+  noticeId: string;
+  title: string;
+  /** @nullable */
+  solicitationNumber?: string | null;
+  /** @nullable */
+  agency?: string | null;
+  /** @nullable */
+  postedDate: string | null;
+  /** @nullable */
+  responseDeadLine?: string | null;
+  /** @nullable */
+  naicsCode?: string | null;
+  /** @nullable */
+  type?: string | null;
+  active: string;
+  /** @nullable */
+  awardAmount?: number | null;
+  uiLink: string;
+}
+
+export interface OpportunitiesResult {
+  opportunities: Opportunity[];
+  totalRecords: number;
+}
+
+export interface ApiKeyMissing {
+  error: string;
+  setupUrl: string;
+}
+
+export interface OpportunityImportInput {
+  noticeId: string;
+  title: string;
+  /** @nullable */
+  agency?: string | null;
+  /** @nullable */
+  responseDeadLine?: string | null;
+  /** @nullable */
+  naicsCode?: string | null;
+  /** @nullable */
+  type?: string | null;
+  /** @nullable */
+  awardAmount?: number | null;
+  uiLink: string;
+}
+
 export type ListLeadsParams = {
 status?: string;
 category?: string;
 search?: string;
+};
+
+export type SearchOpportunitiesParams = {
+keyword?: string;
+limit?: number;
 };
 
