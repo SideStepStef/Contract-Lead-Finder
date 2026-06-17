@@ -9,12 +9,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft, ExternalLink, Trash2, Calendar, Building2, Tag,
   Loader2, AlertCircle, Send, Clock, StickyNote,
+  User, Mail, Phone, Pencil, X, Check,
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +31,8 @@ export default function LeadDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [newNote, setNewNote] = useState("");
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactDraft, setContactDraft] = useState({ name: "", email: "", phone: "" });
 
   const { data: lead, isLoading, error } = useGetLead(id, {
     query: { enabled: !isNaN(id) && id > 0, queryKey: getGetLeadQueryKey(id) },
@@ -91,6 +95,28 @@ export default function LeadDetail() {
     }
   };
 
+  const startEditContact = () => {
+    setContactDraft({
+      name: lead?.contactName ?? "",
+      email: lead?.contactEmail ?? "",
+      phone: lead?.contactPhone ?? "",
+    });
+    setEditingContact(true);
+  };
+
+  const saveContact = () => {
+    updateLeadMutation.mutate({
+      id,
+      data: {
+        contactName: contactDraft.name || undefined,
+        contactEmail: contactDraft.email || undefined,
+        contactPhone: contactDraft.phone || undefined,
+      },
+    }, {
+      onSuccess: () => setEditingContact(false),
+    });
+  };
+
   if (isNaN(id) || id <= 0) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-center">
@@ -130,13 +156,14 @@ export default function LeadDetail() {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
   };
 
+  const hasContact = lead.contactName || lead.contactEmail || lead.contactPhone;
+
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-4 text-sm font-mono text-muted-foreground">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/leads")} className="h-8 px-2 font-mono text-xs">
-          <ArrowLeft className="w-3 h-3 mr-2" />
-          BACK TO PIPELINE
+          <ArrowLeft className="w-3 h-3 mr-2" />BACK TO PIPELINE
         </Button>
         <span>/</span>
         <span>LEAD #{lead.id.toString().padStart(4, "0")}</span>
@@ -186,13 +213,12 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
-          {/* Notes History */}
+          {/* Notes Log */}
           <Card className="rounded-xl border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium font-mono flex items-center gap-2">
-                  <StickyNote className="w-4 h-4" />
-                  NOTES LOG
+                  <StickyNote className="w-4 h-4" />NOTES LOG
                 </CardTitle>
                 <span className="font-mono text-xs text-muted-foreground">
                   {notes.length} ENTR{notes.length !== 1 ? "IES" : "Y"}
@@ -200,36 +226,23 @@ export default function LeadDetail() {
               </div>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
-              {/* Add note input */}
               <div className="space-y-2">
                 <Textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Log an update, call outcome, intel, or next step..."
                   className="min-h-[80px] font-mono text-sm bg-background resize-none"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote();
-                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote(); }}
                 />
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-mono text-muted-foreground">⌘ + Enter to submit</span>
-                  <Button
-                    size="sm"
-                    onClick={handleAddNote}
-                    disabled={!newNote.trim() || createNoteMutation.isPending}
-                    className="font-mono text-xs h-8"
-                  >
-                    {createNoteMutation.isPending ? (
-                      <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
-                    ) : (
-                      <Send className="w-3 h-3 mr-1.5" />
-                    )}
+                  <Button size="sm" onClick={handleAddNote} disabled={!newNote.trim() || createNoteMutation.isPending} className="font-mono text-xs h-8">
+                    {createNoteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <Send className="w-3 h-3 mr-1.5" />}
                     LOG NOTE
                   </Button>
                 </div>
               </div>
 
-              {/* Timeline */}
               {notesLoading ? (
                 <div className="flex items-center gap-2 py-4 text-muted-foreground font-mono text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" /> Loading notes...
@@ -241,11 +254,9 @@ export default function LeadDetail() {
                 </div>
               ) : (
                 <div className="relative space-y-0">
-                  {/* Timeline line */}
                   <div className="absolute left-[7px] top-3 bottom-3 w-px bg-border" />
                   {notes.map((note, i) => (
                     <div key={note.id} className="relative flex gap-4 pb-5 last:pb-0">
-                      {/* Dot */}
                       <div className={`relative z-10 mt-1 w-[15px] h-[15px] rounded-full border-2 shrink-0 ${i === 0 ? "bg-primary border-primary" : "bg-background border-border"}`} />
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
@@ -253,9 +264,7 @@ export default function LeadDetail() {
                           <span title={format(new Date(note.createdAt), "MMM dd, yyyy HH:mm:ss")}>
                             {format(new Date(note.createdAt), "MMM dd, yyyy 'at' HH:mm")}
                           </span>
-                          <span className="text-muted-foreground/50">
-                            ({formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })})
-                          </span>
+                          <span className="text-muted-foreground/50">({formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })})</span>
                         </div>
                         <div className={`rounded-lg px-3 py-2.5 text-sm font-mono whitespace-pre-wrap leading-relaxed ${i === 0 ? "bg-primary/5 border border-primary/20" : "bg-muted/50 border border-border/50"}`}>
                           {note.content}
@@ -271,17 +280,107 @@ export default function LeadDetail() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Financials */}
           <Card className="rounded-xl border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-sm font-medium font-mono">FINANCIALS</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="text-3xl font-bold font-mono tracking-tight">
-                {formatCurrency(lead.contractValue)}
-              </div>
+              <div className="text-3xl font-bold font-mono tracking-tight">{formatCurrency(lead.contractValue)}</div>
             </CardContent>
           </Card>
 
+          {/* Point of Contact */}
+          <Card className="rounded-xl border-border bg-card">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium font-mono flex items-center gap-2">
+                  <User className="w-4 h-4" />POINT OF CONTACT
+                </CardTitle>
+                {!editingContact ? (
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={startEditContact} title="Edit contact">
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                ) : (
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground" onClick={() => setEditingContact(false)} title="Cancel">
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary" onClick={saveContact} disabled={updateLeadMutation.isPending} title="Save contact">
+                      {updateLeadMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {editingContact ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><User className="w-3 h-3" />NAME</label>
+                    <Input
+                      value={contactDraft.name}
+                      onChange={(e) => setContactDraft(d => ({ ...d, name: e.target.value }))}
+                      placeholder="Jane Smith"
+                      className="font-mono text-sm bg-background h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><Mail className="w-3 h-3" />EMAIL</label>
+                    <Input
+                      type="email"
+                      value={contactDraft.email}
+                      onChange={(e) => setContactDraft(d => ({ ...d, email: e.target.value }))}
+                      placeholder="jane@agency.gov"
+                      className="font-mono text-sm bg-background h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3" />PHONE</label>
+                    <Input
+                      type="tel"
+                      value={contactDraft.phone}
+                      onChange={(e) => setContactDraft(d => ({ ...d, phone: e.target.value }))}
+                      placeholder="(555) 000-0000"
+                      className="font-mono text-sm bg-background h-8"
+                    />
+                  </div>
+                </div>
+              ) : hasContact ? (
+                <div className="space-y-3 font-mono text-sm">
+                  {lead.contactName && (
+                    <div className="flex items-start gap-2">
+                      <User className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                      <span className="break-all">{lead.contactName}</span>
+                    </div>
+                  )}
+                  {lead.contactEmail && (
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                      <a href={`mailto:${lead.contactEmail}`} className="text-primary hover:underline break-all">
+                        {lead.contactEmail}
+                      </a>
+                    </div>
+                  )}
+                  {lead.contactPhone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                      <a href={`tel:${lead.contactPhone}`} className="text-primary hover:underline">
+                        {lead.contactPhone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button onClick={startEditContact} className="w-full py-5 border border-dashed border-border rounded-lg flex flex-col items-center gap-1.5 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors group">
+                  <User className="w-5 h-5 group-hover:text-primary transition-colors" />
+                  <span className="font-mono text-xs">ADD CONTACT</span>
+                </button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Metadata */}
           <Card className="rounded-xl border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-sm font-medium font-mono">METADATA</CardTitle>
@@ -312,7 +411,7 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
-          {/* Legacy notes field (read-only) */}
+          {/* Legacy initial notes */}
           {lead.notes && (
             <Card className="rounded-xl border-border bg-card">
               <CardHeader className="pb-3 border-b border-border/50">

@@ -38,6 +38,12 @@ export interface Lead {
   sourceUrl?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -65,6 +71,9 @@ export interface LeadInput {
   status?: LeadInputStatus;
   sourceUrl?: string;
   notes?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 export type LeadUpdateStatus = typeof LeadUpdateStatus[keyof typeof LeadUpdateStatus];
@@ -90,6 +99,9 @@ export interface LeadUpdate {
   status?: LeadUpdateStatus;
   sourceUrl?: string;
   notes?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 export type LeadsStatsByStatusItem = {

@@ -37,6 +37,9 @@ export const ListLeadsResponseItem = zod.object({
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']),
   "sourceUrl": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -58,7 +61,10 @@ export const CreateLeadBody = zod.object({
   "category": zod.string(),
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']).optional(),
   "sourceUrl": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "contactName": zod.string().optional(),
+  "contactEmail": zod.string().optional(),
+  "contactPhone": zod.string().optional()
 })
 
 
@@ -80,6 +86,9 @@ export const GetLeadResponse = zod.object({
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']),
   "sourceUrl": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -104,7 +113,10 @@ export const UpdateLeadBody = zod.object({
   "category": zod.string().optional(),
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']).optional(),
   "sourceUrl": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "contactName": zod.string().optional(),
+  "contactEmail": zod.string().optional(),
+  "contactPhone": zod.string().optional()
 })
 
 export const UpdateLeadResponse = zod.object({
@@ -118,6 +130,9 @@ export const UpdateLeadResponse = zod.object({
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']),
   "sourceUrl": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -159,6 +174,9 @@ export const GetRecentLeadsResponseItem = zod.object({
   "status": zod.enum(['new', 'researching', 'bidding', 'won', 'lost', 'archived']),
   "sourceUrl": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

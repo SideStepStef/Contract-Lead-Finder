@@ -18,4 +18,7 @@ export interface LeadInput {
   status?: LeadInputStatus;
   sourceUrl?: string;
   notes?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }

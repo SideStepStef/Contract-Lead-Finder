@@ -24,6 +24,12 @@ export interface Lead {
   sourceUrl?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

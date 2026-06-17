@@ -313,6 +313,12 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        contactPhone:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -344,6 +350,12 @@ components:
           type: string
         notes:
           type: string
+        contactName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
 
     LeadUpdate:
       type: object
@@ -367,6 +379,12 @@ components:
         sourceUrl:
           type: string
         notes:
+          type: string
+        contactName:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
           type: string
 
     LeadsStats:
