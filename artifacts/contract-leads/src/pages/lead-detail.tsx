@@ -21,13 +21,214 @@ import {
   Loader2, AlertCircle, Send, Clock, StickyNote,
   User, Mail, Phone, Pencil, X, Check, Trophy, XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 type LeadStatus = "new" | "researching" | "bidding" | "won" | "lost" | "archived";
-
 const CLOSE_STATUSES: LeadStatus[] = ["won", "lost"];
+const CATEGORIES = ["technology", "construction", "consulting", "marketing", "healthcare", "education", "other"];
+
+// ── Inline edit helpers ──────────────────────────────────────────────────────
+
+interface InlineTextProps {
+  value: string;
+  onSave: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+  inputClassName?: string;
+  multiline?: boolean;
+  displayAs?: "heading" | "normal";
+}
+
+function InlineText({ value, onSave, placeholder = "—", className, inputClassName, multiline, displayAs }: InlineTextProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+
+  const start = () => { setDraft(value); setEditing(true); };
+  const cancel = () => setEditing(false);
+  const save = () => {
+    const trimmed = draft.trim();
+    if (trimmed !== value) onSave(trimmed || value);
+    setEditing(false);
+  };
+  const handleKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") { cancel(); return; }
+    if (e.key === "Enter" && !multiline) { e.preventDefault(); save(); }
+    if (e.key === "Enter" && multiline && (e.metaKey || e.ctrlKey)) { save(); }
+  };
+
+  if (editing) {
+    const sharedProps = {
+      ref: inputRef as any,
+      value: draft,
+      onChange: (e: React.ChangeEvent<any>) => setDraft(e.target.value),
+      onKeyDown: handleKey,
+      onBlur: save,
+      className: cn("bg-background border-primary ring-primary focus-visible:ring-1", inputClassName),
+    };
+    return (
+      <div className={cn("flex items-start gap-2", className)}>
+        {multiline
+          ? <Textarea {...sharedProps} className={cn(sharedProps.className, "min-h-[120px] resize-none flex-1 font-mono text-sm")} />
+          : <Input {...sharedProps} className={cn(sharedProps.className, displayAs === "heading" ? "text-2xl font-bold h-auto py-1 px-2" : "h-8 text-sm font-mono", "flex-1")} />
+        }
+        <div className="flex gap-1 pt-0.5 shrink-0">
+          <button onMouseDown={(e) => { e.preventDefault(); cancel(); }} className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+          <button onMouseDown={(e) => { e.preventDefault(); save(); }} className="h-7 w-7 flex items-center justify-center rounded-md text-primary hover:bg-primary/10 transition-colors">
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={start}
+      className={cn(
+        "group flex items-center gap-2 text-left w-full rounded-md transition-colors",
+        "hover:bg-muted/50 -mx-2 px-2 py-1",
+        className
+      )}
+    >
+      <span className={cn(!value && "text-muted-foreground italic", displayAs === "heading" && "text-3xl font-bold tracking-tight")}>
+        {value || placeholder}
+      </span>
+      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+    </button>
+  );
+}
+
+interface InlineNumberProps {
+  value: number | null | undefined;
+  onSave: (v: number | null) => void;
+  prefix?: string;
+  className?: string;
+}
+
+function InlineNumber({ value, onSave, prefix, className }: InlineNumberProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value != null ? String(value) : "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+  useEffect(() => { if (!editing) setDraft(value != null ? String(value) : ""); }, [value, editing]);
+
+  const start = () => { setDraft(value != null ? String(value) : ""); setEditing(true); };
+  const cancel = () => setEditing(false);
+  const save = () => {
+    const num = draft.trim() === "" ? null : Number(draft.replace(/[^0-9.]/g, ""));
+    onSave(isNaN(num as number) ? null : num);
+    setEditing(false);
+  };
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") cancel();
+    if (e.key === "Enter") { e.preventDefault(); save(); }
+  };
+
+  const display = value != null
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+    : "—";
+
+  if (editing) {
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <div className="flex items-center gap-1 flex-1">
+          {prefix && <span className="text-muted-foreground font-mono text-sm">{prefix}</span>}
+          <Input
+            ref={inputRef}
+            type="number"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={handleKey}
+            onBlur={save}
+            placeholder="0"
+            className="bg-background border-primary ring-primary focus-visible:ring-1 font-mono text-2xl font-bold h-auto py-1 px-2 w-full"
+          />
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <button onMouseDown={e => { e.preventDefault(); cancel(); }} className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+          <button onMouseDown={e => { e.preventDefault(); save(); }} className="h-7 w-7 flex items-center justify-center rounded-md text-primary hover:bg-primary/10 transition-colors">
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={start} className="group flex items-center gap-2 text-left w-full rounded-md hover:bg-muted/50 -mx-2 px-2 py-1 transition-colors">
+      <span className="text-3xl font-bold font-mono tracking-tight">{display}</span>
+      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+    </button>
+  );
+}
+
+interface InlineDateProps {
+  value: string | null | undefined;
+  onSave: (v: string | null) => void;
+}
+
+function InlineDate({ value, onSave }: InlineDateProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ? value.slice(0, 10) : "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+  useEffect(() => { if (!editing) setDraft(value ? value.slice(0, 10) : ""); }, [value, editing]);
+
+  const start = () => { setDraft(value ? value.slice(0, 10) : ""); setEditing(true); };
+  const cancel = () => setEditing(false);
+  const save = () => { onSave(draft || null); setEditing(false); };
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") cancel();
+    if (e.key === "Enter") { e.preventDefault(); save(); }
+  };
+
+  const display = value ? format(new Date(value), "MMM dd, yyyy") : "—";
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          ref={inputRef}
+          type="date"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={handleKey}
+          onBlur={save}
+          className="bg-background border-primary ring-primary focus-visible:ring-1 font-mono text-sm h-8 w-auto"
+        />
+        <button onMouseDown={e => { e.preventDefault(); cancel(); }} className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+          <X className="w-3 h-3" />
+        </button>
+        <button onMouseDown={e => { e.preventDefault(); save(); }} className="h-6 w-6 flex items-center justify-center rounded text-primary hover:bg-primary/10 transition-colors">
+          <Check className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={start} className="group flex items-center gap-1.5 rounded hover:bg-muted/50 px-1 py-0.5 -mx-1 transition-colors text-left">
+      <Calendar className="w-4 h-4" />
+      <span>{display}</span>
+      <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+    </button>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export default function LeadDetail() {
   const [, params] = useRoute("/leads/:id");
@@ -40,7 +241,6 @@ export default function LeadDetail() {
   const [editingContact, setEditingContact] = useState(false);
   const [contactDraft, setContactDraft] = useState({ name: "", email: "", phone: "" });
 
-  // Close-reason dialog state
   const [closeDialog, setCloseDialog] = useState<{ open: boolean; status: "won" | "lost" | null }>({ open: false, status: null });
   const [closeReasonDraft, setCloseReasonDraft] = useState("");
 
@@ -89,17 +289,17 @@ export default function LeadDetail() {
     },
   });
 
-  // When user picks a status — intercept won/lost to show dialog
+  const patch = (data: Record<string, unknown>) => updateLeadMutation.mutate({ id, data: data as any });
+
   const handleStatusChange = (newStatus: LeadStatus) => {
     if (CLOSE_STATUSES.includes(newStatus)) {
       setCloseReasonDraft("");
       setCloseDialog({ open: true, status: newStatus });
     } else {
-      updateLeadMutation.mutate({ id, data: { status: newStatus, closeReason: "" } });
+      patch({ status: newStatus, closeReason: "" });
     }
   };
 
-  // Confirm the close dialog (with or without a reason)
   const handleCloseConfirm = () => {
     if (!closeDialog.status) return;
     updateLeadMutation.mutate(
@@ -121,61 +321,49 @@ export default function LeadDetail() {
   };
 
   const startEditContact = () => {
-    setContactDraft({
-      name: lead?.contactName ?? "",
-      email: lead?.contactEmail ?? "",
-      phone: lead?.contactPhone ?? "",
-    });
+    setContactDraft({ name: lead?.contactName ?? "", email: lead?.contactEmail ?? "", phone: lead?.contactPhone ?? "" });
     setEditingContact(true);
   };
 
   const saveContact = () => {
-    updateLeadMutation.mutate(
-      { id, data: { contactName: contactDraft.name || undefined, contactEmail: contactDraft.email || undefined, contactPhone: contactDraft.phone || undefined } },
-      { onSuccess: () => setEditingContact(false) }
-    );
+    patch({ contactName: contactDraft.name || undefined, contactEmail: contactDraft.email || undefined, contactPhone: contactDraft.phone || undefined });
+    setEditingContact(false);
   };
 
-  if (isNaN(id) || id <= 0) {
-    return <div className="p-8 max-w-4xl mx-auto text-center"><h1 className="text-2xl font-bold font-mono text-destructive">INVALID LEAD ID</h1></div>;
-  }
+  if (isNaN(id) || id <= 0) return (
+    <div className="p-8 max-w-4xl mx-auto text-center">
+      <h1 className="text-2xl font-bold font-mono text-destructive">INVALID LEAD ID</h1>
+    </div>
+  );
 
-  if (isLoading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center text-muted-foreground gap-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="font-mono text-sm">LOADING INTEL...</p>
-        </div>
+  if (isLoading) return (
+    <div className="p-8 flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center text-muted-foreground gap-4">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="font-mono text-sm">LOADING INTEL...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (error || !lead) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="font-mono font-bold">ERROR</AlertTitle>
-          <AlertDescription className="font-mono text-sm">Failed to load lead details.</AlertDescription>
-        </Alert>
-        <Button variant="outline" className="mt-4" onClick={() => setLocation("/leads")}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> RETURN TO ALL LEADS
-        </Button>
-      </div>
-    );
-  }
-
-  const formatCurrency = (value: number | null | undefined) => {
-    if (value == null) return "—";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-  };
+  if (error || !lead) return (
+    <div className="p-8 max-w-4xl mx-auto">
+      <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle className="font-mono font-bold">ERROR</AlertTitle>
+        <AlertDescription className="font-mono text-sm">Failed to load lead details.</AlertDescription>
+      </Alert>
+      <Button variant="outline" className="mt-4" onClick={() => setLocation("/leads")}>
+        <ArrowLeft className="h-4 w-4 mr-2" /> RETURN TO ALL LEADS
+      </Button>
+    </div>
+  );
 
   const hasContact = lead.contactName || lead.contactEmail || lead.contactPhone;
   const isClosed = lead.status === "won" || lead.status === "lost";
 
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
+
       {/* Close-reason dialog */}
       <Dialog open={closeDialog.open} onOpenChange={(open) => !open && setCloseDialog({ open: false, status: null })}>
         <DialogContent className="sm:max-w-md">
@@ -192,25 +380,19 @@ export default function LeadDetail() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <label className="font-mono text-xs text-muted-foreground">
-              CLOSE REASON <span className="opacity-50">(optional)</span>
-            </label>
+            <label className="font-mono text-xs text-muted-foreground">CLOSE REASON <span className="opacity-50">(optional)</span></label>
             <Textarea
               value={closeReasonDraft}
               onChange={(e) => setCloseReasonDraft(e.target.value)}
-              placeholder={
-                closeDialog.status === "won"
-                  ? "e.g. Best price, strong proposal, existing relationship..."
-                  : "e.g. Lost on price, missed deadline, competitor selected..."
-              }
+              placeholder={closeDialog.status === "won"
+                ? "e.g. Best price, strong proposal, existing relationship..."
+                : "e.g. Lost on price, missed deadline, competitor selected..."}
               className="min-h-[90px] font-mono text-sm bg-background resize-none"
               autoFocus
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" className="font-mono text-xs" onClick={() => setCloseDialog({ open: false, status: null })}>
-              CANCEL
-            </Button>
+            <Button variant="outline" size="sm" className="font-mono text-xs" onClick={() => setCloseDialog({ open: false, status: null })}>CANCEL</Button>
             <Button
               size="sm"
               className={`font-mono text-xs ${closeDialog.status === "won" ? "bg-green-600 hover:bg-green-700" : ""}`}
@@ -232,18 +414,63 @@ export default function LeadDetail() {
         </Button>
         <span>/</span>
         <span>LEAD #{lead.id.toString().padStart(4, "0")}</span>
+        {updateLeadMutation.isPending && (
+          <span className="flex items-center gap-1 text-primary text-xs">
+            <Loader2 className="w-3 h-3 animate-spin" /> SAVING...
+          </span>
+        )}
       </div>
 
-      {/* Header */}
+      {/* Header — title + controls */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-        <div className="space-y-2 flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{lead.title}</h1>
+        <div className="space-y-3 flex-1 min-w-0">
+          {/* Editable title */}
+          <InlineText
+            value={lead.title}
+            onSave={(v) => patch({ title: v })}
+            placeholder="Untitled lead"
+            displayAs="heading"
+            inputClassName="text-2xl font-bold"
+          />
+
+          {/* Editable issuer · category · deadline row */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-mono">
-            {lead.issuer && <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4" />{lead.issuer}</span>}
-            <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" />{lead.category.toUpperCase()}</span>
-            {lead.deadline && <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{format(new Date(lead.deadline), "MMM dd, yyyy")}</span>}
+            {/* Issuer */}
+            <div className="flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 shrink-0" />
+              <InlineText
+                value={lead.issuer ?? ""}
+                onSave={(v) => patch({ issuer: v || undefined })}
+                placeholder="Add issuer"
+                inputClassName="h-7 text-sm"
+                className="hover:!bg-transparent -mx-0 px-0 py-0"
+              />
+            </div>
+
+            {/* Category — select dropdown */}
+            <div className="flex items-center gap-1.5">
+              <Tag className="w-4 h-4 shrink-0" />
+              <Select value={lead.category} onValueChange={(v) => patch({ category: v })}>
+                <SelectTrigger className="h-7 text-xs font-mono border-0 shadow-none bg-transparent hover:bg-muted/50 px-1 w-auto gap-1.5 focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => (
+                    <SelectItem key={c} value={c} className="font-mono text-xs">{c.toUpperCase()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Deadline */}
+            <InlineDate
+              value={lead.deadline}
+              onSave={(v) => patch({ deadline: v || undefined })}
+            />
           </div>
         </div>
+
+        {/* Status + delete */}
         <div className="flex items-center gap-3 shrink-0">
           <Select value={lead.status} onValueChange={(v) => handleStatusChange(v as LeadStatus)}>
             <SelectTrigger className="w-[160px] font-mono bg-background border-border">
@@ -261,7 +488,7 @@ export default function LeadDetail() {
         </div>
       </div>
 
-      {/* Close reason banner — shown when lead is won/lost and has a reason */}
+      {/* Close reason banner */}
       {isClosed && lead.closeReason && (
         <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border font-mono text-sm ${
           lead.status === "won"
@@ -283,15 +510,21 @@ export default function LeadDetail() {
       {/* Body */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          {/* Description */}
+
+          {/* Editable description */}
           <Card className="rounded-xl border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-sm font-medium font-mono">DESCRIPTION</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              {lead.description
-                ? <p className="whitespace-pre-wrap text-sm leading-relaxed">{lead.description}</p>
-                : <p className="text-muted-foreground italic text-sm">No description provided.</p>}
+              <InlineText
+                value={lead.description ?? ""}
+                onSave={(v) => patch({ description: v || undefined })}
+                placeholder="Click to add a description…"
+                multiline
+                className="hover:!bg-transparent -mx-0 px-0 py-0 items-start"
+                inputClassName="text-sm leading-relaxed"
+              />
             </CardContent>
           </Card>
 
@@ -360,15 +593,19 @@ export default function LeadDetail() {
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Right sidebar */}
         <div className="space-y-6">
-          {/* Financials */}
+
+          {/* Editable contract value */}
           <Card className="rounded-xl border-border bg-card">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-sm font-medium font-mono">FINANCIALS</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="text-3xl font-bold font-mono tracking-tight">{formatCurrency(lead.contractValue)}</div>
+              <InlineNumber
+                value={lead.contractValue}
+                onSave={(v) => patch({ contractValue: v ?? undefined })}
+              />
             </CardContent>
           </Card>
 
