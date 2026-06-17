@@ -12,11 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft, ExternalLink, Trash2, Calendar, Building2, Tag,
   Loader2, AlertCircle, Send, Clock, StickyNote,
-  User, Mail, Phone, Pencil, X, Check,
+  User, Mail, Phone, Pencil, X, Check, Trophy, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -24,15 +27,22 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type LeadStatus = "new" | "researching" | "bidding" | "won" | "lost" | "archived";
 
+const CLOSE_STATUSES: LeadStatus[] = ["won", "lost"];
+
 export default function LeadDetail() {
   const [, params] = useRoute("/leads/:id");
   const [, setLocation] = useLocation();
   const id = Number(params?.id);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
   const [newNote, setNewNote] = useState("");
   const [editingContact, setEditingContact] = useState(false);
   const [contactDraft, setContactDraft] = useState({ name: "", email: "", phone: "" });
+
+  // Close-reason dialog state
+  const [closeDialog, setCloseDialog] = useState<{ open: boolean; status: "won" | "lost" | null }>({ open: false, status: null });
+  const [closeReasonDraft, setCloseReasonDraft] = useState("");
 
   const { data: lead, isLoading, error } = useGetLead(id, {
     query: { enabled: !isNaN(id) && id > 0, queryKey: getGetLeadQueryKey(id) },
@@ -79,8 +89,23 @@ export default function LeadDetail() {
     },
   });
 
+  // When user picks a status — intercept won/lost to show dialog
   const handleStatusChange = (newStatus: LeadStatus) => {
-    updateLeadMutation.mutate({ id, data: { status: newStatus } });
+    if (CLOSE_STATUSES.includes(newStatus)) {
+      setCloseReasonDraft("");
+      setCloseDialog({ open: true, status: newStatus });
+    } else {
+      updateLeadMutation.mutate({ id, data: { status: newStatus, closeReason: "" } });
+    }
+  };
+
+  // Confirm the close dialog (with or without a reason)
+  const handleCloseConfirm = () => {
+    if (!closeDialog.status) return;
+    updateLeadMutation.mutate(
+      { id, data: { status: closeDialog.status, closeReason: closeReasonDraft.trim() || undefined } },
+      { onSuccess: () => setCloseDialog({ open: false, status: null }) }
+    );
   };
 
   const handleAddNote = () => {
@@ -105,24 +130,14 @@ export default function LeadDetail() {
   };
 
   const saveContact = () => {
-    updateLeadMutation.mutate({
-      id,
-      data: {
-        contactName: contactDraft.name || undefined,
-        contactEmail: contactDraft.email || undefined,
-        contactPhone: contactDraft.phone || undefined,
-      },
-    }, {
-      onSuccess: () => setEditingContact(false),
-    });
+    updateLeadMutation.mutate(
+      { id, data: { contactName: contactDraft.name || undefined, contactEmail: contactDraft.email || undefined, contactPhone: contactDraft.phone || undefined } },
+      { onSuccess: () => setEditingContact(false) }
+    );
   };
 
   if (isNaN(id) || id <= 0) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto text-center">
-        <h1 className="text-2xl font-bold font-mono text-destructive">INVALID LEAD ID</h1>
-      </div>
-    );
+    return <div className="p-8 max-w-4xl mx-auto text-center"><h1 className="text-2xl font-bold font-mono text-destructive">INVALID LEAD ID</h1></div>;
   }
 
   if (isLoading) {
@@ -157,9 +172,59 @@ export default function LeadDetail() {
   };
 
   const hasContact = lead.contactName || lead.contactEmail || lead.contactPhone;
+  const isClosed = lead.status === "won" || lead.status === "lost";
 
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
+      {/* Close-reason dialog */}
+      <Dialog open={closeDialog.open} onOpenChange={(open) => !open && setCloseDialog({ open: false, status: null })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-mono flex items-center gap-2">
+              {closeDialog.status === "won"
+                ? <><Trophy className="w-5 h-5 text-green-500" /> MARK AS WON</>
+                : <><XCircle className="w-5 h-5 text-destructive" /> MARK AS LOST</>}
+            </DialogTitle>
+            <DialogDescription className="font-mono text-xs">
+              {closeDialog.status === "won"
+                ? "Congratulations! What made this deal close?"
+                : "What was the reason this lead didn't move forward?"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="font-mono text-xs text-muted-foreground">
+              CLOSE REASON <span className="opacity-50">(optional)</span>
+            </label>
+            <Textarea
+              value={closeReasonDraft}
+              onChange={(e) => setCloseReasonDraft(e.target.value)}
+              placeholder={
+                closeDialog.status === "won"
+                  ? "e.g. Best price, strong proposal, existing relationship..."
+                  : "e.g. Lost on price, missed deadline, competitor selected..."
+              }
+              className="min-h-[90px] font-mono text-sm bg-background resize-none"
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" className="font-mono text-xs" onClick={() => setCloseDialog({ open: false, status: null })}>
+              CANCEL
+            </Button>
+            <Button
+              size="sm"
+              className={`font-mono text-xs ${closeDialog.status === "won" ? "bg-green-600 hover:bg-green-700" : ""}`}
+              variant={closeDialog.status === "lost" ? "destructive" : "default"}
+              onClick={handleCloseConfirm}
+              disabled={updateLeadMutation.isPending}
+            >
+              {updateLeadMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : null}
+              {closeReasonDraft.trim() ? "SAVE & CLOSE" : "SKIP & CLOSE"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-4 text-sm font-mono text-muted-foreground">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/leads")} className="h-8 px-2 font-mono text-xs">
@@ -196,6 +261,25 @@ export default function LeadDetail() {
         </div>
       </div>
 
+      {/* Close reason banner — shown when lead is won/lost and has a reason */}
+      {isClosed && lead.closeReason && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border font-mono text-sm ${
+          lead.status === "won"
+            ? "bg-green-500/8 border-green-500/20 text-green-700 dark:text-green-400"
+            : "bg-destructive/8 border-destructive/20 text-destructive"
+        }`}>
+          {lead.status === "won"
+            ? <Trophy className="w-4 h-4 mt-0.5 shrink-0" />
+            : <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+          <div>
+            <span className="font-bold text-xs block mb-0.5">
+              {lead.status === "won" ? "WON — " : "LOST — "}CLOSE REASON
+            </span>
+            <span className="opacity-90">{lead.closeReason}</span>
+          </div>
+        </div>
+      )}
+
       {/* Body */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
@@ -205,11 +289,9 @@ export default function LeadDetail() {
               <CardTitle className="text-sm font-medium font-mono">DESCRIPTION</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              {lead.description ? (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{lead.description}</p>
-              ) : (
-                <p className="text-muted-foreground italic text-sm">No description provided.</p>
-              )}
+              {lead.description
+                ? <p className="whitespace-pre-wrap text-sm leading-relaxed">{lead.description}</p>
+                : <p className="text-muted-foreground italic text-sm">No description provided.</p>}
             </CardContent>
           </Card>
 
@@ -303,10 +385,8 @@ export default function LeadDetail() {
                   </Button>
                 ) : (
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground" onClick={() => setEditingContact(false)} title="Cancel">
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary" onClick={saveContact} disabled={updateLeadMutation.isPending} title="Save contact">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground" onClick={() => setEditingContact(false)}><X className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary" onClick={saveContact} disabled={updateLeadMutation.isPending}>
                       {updateLeadMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                     </Button>
                   </div>
@@ -316,60 +396,28 @@ export default function LeadDetail() {
             <CardContent className="pt-4">
               {editingContact ? (
                 <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><User className="w-3 h-3" />NAME</label>
-                    <Input
-                      value={contactDraft.name}
-                      onChange={(e) => setContactDraft(d => ({ ...d, name: e.target.value }))}
-                      placeholder="Jane Smith"
-                      className="font-mono text-sm bg-background h-8"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><Mail className="w-3 h-3" />EMAIL</label>
-                    <Input
-                      type="email"
-                      value={contactDraft.email}
-                      onChange={(e) => setContactDraft(d => ({ ...d, email: e.target.value }))}
-                      placeholder="jane@agency.gov"
-                      className="font-mono text-sm bg-background h-8"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3" />PHONE</label>
-                    <Input
-                      type="tel"
-                      value={contactDraft.phone}
-                      onChange={(e) => setContactDraft(d => ({ ...d, phone: e.target.value }))}
-                      placeholder="(555) 000-0000"
-                      className="font-mono text-sm bg-background h-8"
-                    />
-                  </div>
+                  {[
+                    { icon: <User className="w-3 h-3" />, label: "NAME", key: "name", type: "text", placeholder: "Jane Smith" },
+                    { icon: <Mail className="w-3 h-3" />, label: "EMAIL", key: "email", type: "email", placeholder: "jane@agency.gov" },
+                    { icon: <Phone className="w-3 h-3" />, label: "PHONE", key: "phone", type: "tel", placeholder: "(555) 000-0000" },
+                  ].map(({ icon, label, key, type, placeholder }) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-xs font-mono text-muted-foreground flex items-center gap-1.5">{icon}{label}</label>
+                      <Input
+                        type={type}
+                        value={contactDraft[key as keyof typeof contactDraft]}
+                        onChange={(e) => setContactDraft(d => ({ ...d, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        className="font-mono text-sm bg-background h-8"
+                      />
+                    </div>
+                  ))}
                 </div>
               ) : hasContact ? (
                 <div className="space-y-3 font-mono text-sm">
-                  {lead.contactName && (
-                    <div className="flex items-start gap-2">
-                      <User className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                      <span className="break-all">{lead.contactName}</span>
-                    </div>
-                  )}
-                  {lead.contactEmail && (
-                    <div className="flex items-start gap-2">
-                      <Mail className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                      <a href={`mailto:${lead.contactEmail}`} className="text-primary hover:underline break-all">
-                        {lead.contactEmail}
-                      </a>
-                    </div>
-                  )}
-                  {lead.contactPhone && (
-                    <div className="flex items-start gap-2">
-                      <Phone className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                      <a href={`tel:${lead.contactPhone}`} className="text-primary hover:underline">
-                        {lead.contactPhone}
-                      </a>
-                    </div>
-                  )}
+                  {lead.contactName && <div className="flex items-start gap-2"><User className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" /><span className="break-all">{lead.contactName}</span></div>}
+                  {lead.contactEmail && <div className="flex items-start gap-2"><Mail className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" /><a href={`mailto:${lead.contactEmail}`} className="text-primary hover:underline break-all">{lead.contactEmail}</a></div>}
+                  {lead.contactPhone && <div className="flex items-start gap-2"><Phone className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" /><a href={`tel:${lead.contactPhone}`} className="text-primary hover:underline">{lead.contactPhone}</a></div>}
                 </div>
               ) : (
                 <button onClick={startEditContact} className="w-full py-5 border border-dashed border-border rounded-lg flex flex-col items-center gap-1.5 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors group">
@@ -411,7 +459,6 @@ export default function LeadDetail() {
             </CardContent>
           </Card>
 
-          {/* Legacy initial notes */}
           {lead.notes && (
             <Card className="rounded-xl border-border bg-card">
               <CardHeader className="pb-3 border-b border-border/50">

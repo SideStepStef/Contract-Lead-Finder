@@ -113,6 +113,7 @@ router.post("/leads", async (req, res) => {
       contactName: data.contactName ?? null,
       contactEmail: data.contactEmail ?? null,
       contactPhone: data.contactPhone ?? null,
+      closeReason: data.closeReason ?? null,
     })
     .returning();
 
@@ -166,6 +167,7 @@ router.patch("/leads/:id", async (req, res) => {
   if (d.contactName !== undefined) updates.contactName = d.contactName;
   if (d.contactEmail !== undefined) updates.contactEmail = d.contactEmail;
   if (d.contactPhone !== undefined) updates.contactPhone = d.contactPhone;
+  if (d.closeReason !== undefined) updates.closeReason = d.closeReason;
   updates.updatedAt = new Date();
 
   const [lead] = await db
@@ -230,6 +232,7 @@ function formatLead(lead: typeof leadsTable.$inferSelect) {
     contactName: lead.contactName ?? null,
     contactEmail: lead.contactEmail ?? null,
     contactPhone: lead.contactPhone ?? null,
+    closeReason: lead.closeReason ?? null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

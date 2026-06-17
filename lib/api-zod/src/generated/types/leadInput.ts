@@ -21,4 +21,5 @@ export interface LeadInput {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  closeReason?: string;
 }

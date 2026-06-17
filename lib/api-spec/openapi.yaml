@@ -319,6 +319,8 @@ components:
           type: ["string", "null"]
         contactPhone:
           type: ["string", "null"]
+        closeReason:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -356,6 +358,8 @@ components:
           type: string
         contactPhone:
           type: string
+        closeReason:
+          type: string
 
     LeadUpdate:
       type: object
@@ -385,6 +389,8 @@ components:
         contactEmail:
           type: string
         contactPhone:
+          type: string
+        closeReason:
           type: string
 
     LeadsStats:

@@ -44,6 +44,8 @@ export interface Lead {
   contactEmail?: string | null;
   /** @nullable */
   contactPhone?: string | null;
+  /** @nullable */
+  closeReason?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -74,6 +76,7 @@ export interface LeadInput {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  closeReason?: string;
 }
 
 export type LeadUpdateStatus = typeof LeadUpdateStatus[keyof typeof LeadUpdateStatus];
@@ -102,6 +105,7 @@ export interface LeadUpdate {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  closeReason?: string;
 }
 
 export type LeadsStatsByStatusItem = {

@@ -40,6 +40,7 @@ export const ListLeadsResponseItem = zod.object({
   "contactName": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
+  "closeReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -64,7 +65,8 @@ export const CreateLeadBody = zod.object({
   "notes": zod.string().optional(),
   "contactName": zod.string().optional(),
   "contactEmail": zod.string().optional(),
-  "contactPhone": zod.string().optional()
+  "contactPhone": zod.string().optional(),
+  "closeReason": zod.string().optional()
 })
 
 
@@ -89,6 +91,7 @@ export const GetLeadResponse = zod.object({
   "contactName": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
+  "closeReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -116,7 +119,8 @@ export const UpdateLeadBody = zod.object({
   "notes": zod.string().optional(),
   "contactName": zod.string().optional(),
   "contactEmail": zod.string().optional(),
-  "contactPhone": zod.string().optional()
+  "contactPhone": zod.string().optional(),
+  "closeReason": zod.string().optional()
 })
 
 export const UpdateLeadResponse = zod.object({
@@ -133,6 +137,7 @@ export const UpdateLeadResponse = zod.object({
   "contactName": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
+  "closeReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -177,6 +182,7 @@ export const GetRecentLeadsResponseItem = zod.object({
   "contactName": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
+  "closeReason": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

@@ -30,6 +30,8 @@ export interface Lead {
   contactEmail?: string | null;
   /** @nullable */
   contactPhone?: string | null;
+  /** @nullable */
+  closeReason?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
