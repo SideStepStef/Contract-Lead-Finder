@@ -109,6 +109,18 @@ export interface Category {
   count: number;
 }
 
+export interface Note {
+  id: number;
+  leadId: number;
+  content: string;
+  createdAt: string;
+}
+
+export interface NoteInput {
+  /** @minLength 1 */
+  content: string;
+}
+
 export interface Opportunity {
   noticeId: string;
   title: string;

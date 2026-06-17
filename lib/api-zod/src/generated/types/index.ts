@@ -18,6 +18,8 @@ export * from './leadStatus';
 export * from './leadUpdate';
 export * from './leadUpdateStatus';
 export * from './listLeadsParams';
+export * from './note';
+export * from './noteInput';
 export * from './opportunitiesResult';
 export * from './opportunity';
 export * from './opportunityImportInput';

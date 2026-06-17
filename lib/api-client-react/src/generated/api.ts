@@ -28,6 +28,8 @@ import type {
   LeadUpdate,
   LeadsStats,
   ListLeadsParams,
+  Note,
+  NoteInput,
   OpportunitiesResult,
   OpportunityImportInput,
   SearchOpportunitiesParams
@@ -727,6 +729,155 @@ export function useListCategories<TData = Awaited<ReturnType<typeof listCategori
 
 
 
+
+export const getListLeadNotesUrl = (id: number,) => {
+
+
+
+
+  return `/api/leads/${id}/notes`
+}
+
+/**
+ * @summary List notes for a lead
+ */
+export const listLeadNotes = async (id: number, options?: RequestInit): Promise<Note[]> => {
+
+  return customFetch<Note[]>(getListLeadNotesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLeadNotesQueryKey = (id: number,) => {
+    return [
+    `/api/leads/${id}/notes`
+    ] as const;
+    }
+
+
+export const getListLeadNotesQueryOptions = <TData = Awaited<ReturnType<typeof listLeadNotes>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeadNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLeadNotesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLeadNotes>>> = ({ signal }) => listLeadNotes(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLeadNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLeadNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listLeadNotes>>>
+export type ListLeadNotesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List notes for a lead
+ */
+
+export function useListLeadNotes<TData = Awaited<ReturnType<typeof listLeadNotes>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeadNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLeadNotesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateLeadNoteUrl = (id: number,) => {
+
+
+
+
+  return `/api/leads/${id}/notes`
+}
+
+/**
+ * @summary Add a note to a lead
+ */
+export const createLeadNote = async (id: number,
+    noteInput: NoteInput, options?: RequestInit): Promise<Note> => {
+
+  return customFetch<Note>(getCreateLeadNoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      noteInput,)
+  }
+);}
+
+
+
+
+export const getCreateLeadNoteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLeadNote>>, TError,{id: number;data: BodyType<NoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLeadNote>>, TError,{id: number;data: BodyType<NoteInput>}, TContext> => {
+
+const mutationKey = ['createLeadNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLeadNote>>, {id: number;data: BodyType<NoteInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createLeadNote(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLeadNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createLeadNote>>>
+    export type CreateLeadNoteMutationBody = BodyType<NoteInput>
+    export type CreateLeadNoteMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a note to a lead
+ */
+export const useCreateLeadNote = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLeadNote>>, TError,{id: number;data: BodyType<NoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLeadNote>>,
+        TError,
+        {id: number;data: BodyType<NoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateLeadNoteMutationOptions(options));
+    }
 
 export const getSearchOpportunitiesUrl = (params?: SearchOpportunitiesParams,) => {
   const normalizedParams = new URLSearchParams();

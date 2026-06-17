@@ -177,6 +177,54 @@ paths:
                 items:
                   $ref: "#/components/schemas/Category"
 
+  /leads/{id}/notes:
+    get:
+      operationId: listLeadNotes
+      tags: [leads]
+      summary: List notes for a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+        "404":
+          description: Lead not found
+    post:
+      operationId: createLeadNote
+      tags: [leads]
+      summary: Add a note to a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteInput"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Lead not found
+
   /opportunities/search:
     get:
       operationId: searchOpportunities
@@ -356,6 +404,32 @@ components:
           type: string
         count:
           type: integer
+
+    Note:
+      type: object
+      required:
+        - id
+        - leadId
+        - content
+        - createdAt
+      properties:
+        id:
+          type: integer
+        leadId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+
+    NoteInput:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
 
     Opportunity:
       type: object

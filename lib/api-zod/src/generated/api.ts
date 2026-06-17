@@ -176,6 +176,37 @@ export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
 /**
+ * @summary List notes for a lead
+ */
+export const ListLeadNotesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListLeadNotesResponseItem = zod.object({
+  "id": zod.number(),
+  "leadId": zod.number(),
+  "content": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListLeadNotesResponse = zod.array(ListLeadNotesResponseItem)
+
+
+/**
+ * @summary Add a note to a lead
+ */
+export const CreateLeadNoteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreateLeadNoteBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+
+/**
  * @summary Search SAM.gov contract opportunities
  */
 export const searchOpportunitiesQueryLimitDefault = 10;
